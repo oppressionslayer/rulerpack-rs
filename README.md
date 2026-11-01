@@ -44,6 +44,7 @@ a mask and two XORs.
 | `Family`, `F513`, `F257`, `MARKS_FAMILY` | pack and unpack on `u128` |
 | `isprime` | deterministic Miller-Rabin, exact for all `u64` |
 | `hinted_next`, `hint_of`, `hint_walk` | the next prime from its low bits alone, one modulo and one add, no test; `hint_walk` rebuilds every prime after a start from seventeen bits each |
+| `experiments` | the drawer: session moments kept as functions, starting with the step-10 index and its layers; the twin of `rulerpack.experiments` |
 | `wheel_pass`, `wheel_report` | the seed wheel over `anchor..anchor+count`: each offset's first divisor among `[2, seeds...]` or `None`; `big::wheel_pass_big` is the same on a `BigUint` |
 | `PiTable` | odd bit sieve with a rank index: `pi(n)` in O(1) after the build |
 | `Counter` | Meissel with pi-table pruning: `primepi`, `nth_prime`, `index_of` |
@@ -221,6 +222,12 @@ cargo clippy --release --all-targets -- -D warnings
 MIT license.
 
 ## Changes
+
+**0.2.1** (2026-11-01)
+
+- `experiments`: the drawer, ported from the Python package: `stride_index`, `xor_index`, `stripe`, `jumps`,
+  `block_crossings`, `last_before_blocks`, `gaps_to_blocks`, `layers`, `bit_layers`, `recover`, `side_by_side`,
+  `stripe_control`, with the same tests.
 
 **0.2.0** (2026-11-01)
 

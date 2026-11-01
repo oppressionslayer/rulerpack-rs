@@ -10,6 +10,7 @@ use std::collections::HashMap;
 pub mod bands;
 #[cfg(feature = "big")]
 pub mod big;
+pub mod experiments;
 #[cfg(feature = "gmp")]
 pub mod gmp;
 
