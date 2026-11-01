@@ -39,9 +39,12 @@ a mask and two XORs.
 
 | item | what |
 |---|---|
-| `ladder`, `rp`, `ruler` | the rulers |
+| `ladder`, `rp`, `ruler`, `r896`, `carry` | the rulers, and the ruler's carry `ladder(i) ^ ladder(i+1)` |
+| `slide512`, `unslide512`, `slide_repeats` | Lars's 512 slide `((p·512) ^ 512) ^ r896(i)`: 384 mod 512 for any input, the primes read straight back, and it repeats exactly where `p ^ q == carry(i)` |
 | `Family`, `F513`, `F257`, `MARKS_FAMILY` | pack and unpack on `u128` |
 | `isprime` | deterministic Miller-Rabin, exact for all `u64` |
+| `hinted_next`, `hint_of`, `hint_walk` | the next prime from its low bits alone, one modulo and one add, no test; `hint_walk` rebuilds every prime after a start from seventeen bits each |
+| `wheel_pass`, `wheel_report` | the seed wheel over `anchor..anchor+count`: each offset's first divisor among `[2, seeds...]` or `None`; `big::wheel_pass_big` is the same on a `BigUint` |
 | `PiTable` | odd bit sieve with a rank index: `pi(n)` in O(1) after the build |
 | `Counter` | Meissel with pi-table pruning: `primepi`, `nth_prime`, `index_of` |
 | `li`, `riemann_r` and their inverses | the guess for `nth_prime` |
@@ -216,3 +219,14 @@ cargo clippy --release --all-targets -- -D warnings
 ```
 
 MIT license.
+
+## Changes
+
+**0.2.0** (2026-11-01)
+
+- `wheel_pass`, `wheel_report`, and `big::wheel_pass_big`: the seed wheel over any anchor, seeds as a parameter.
+- `hinted_next`, `hint_of`, `hint_walk`: the next prime from its low bits, no test; the whole sequence back from seventeen bits each.
+- `r896`, `carry`, `slide512`, `unslide512`, `slide_repeats`: the 512 slide and where it repeats.
+- `examples/ruler_stack.rs`: the ruler stack scored on the next prime, the twin of the Python sandbox table.
+
+**0.1.0** — the rulers, the pack, `isprime`, `PiTable`, `Counter`, marks, the window, big anchors.

@@ -22,6 +22,17 @@ pub fn rp(i: u64) -> u64 { (4 * i) ^ (4 * i + 7) }
 /// General ruler ((Li) ^ (Li + cL + 1)) ^ 1 == L * (i ^ (i + c)).
 pub fn ruler(i: u64, l: u64, c: u64) -> u64 { ((l * i) ^ (l * i + c * l + 1)) ^ 1 }
 
+/// The two-arange ruler `(896 + 512i) ^ (512i) == 384 + 512 * ladder(i)`: 896, 1920, 896, 3968, ...
+pub fn r896(i: u64) -> u64 { (896 + 512 * i) ^ (512 * i) }
+/// The ruler's carry at `i`, `ladder(i) ^ ladder(i + 1)`: 2, 6, 6, 2, 2, 14, 14, 2, ...
+pub fn carry(i: u64) -> u64 { ladder(i) ^ ladder(i + 1) }
+/// **The 512 slide**: `((p * 512) ^ 512) ^ r896(i)`, which is `384 + 512 * ((p ^ 1) ^ ladder(i))`.
+pub fn slide512(p: u64, i: u64) -> u64 { ((p * 512) ^ 512) ^ r896(i) }
+/// `p` back from a slide entry and its index.
+pub fn unslide512(b: u64, i: u64) -> u64 { (((b - 384) / 512) ^ ladder(i)) ^ 1 }
+/// Whether the slide repeats at `i`: `slide512(p, i) == slide512(q, i + 1)`, which is `p ^ q == carry(i)`.
+pub fn slide_repeats(p: u64, q: u64, i: u64) -> bool { p ^ q == carry(i) }
+
 // ── pack ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug)]
@@ -73,6 +84,50 @@ pub fn allowed(h: u64) -> bool {
     if SEEDS.iter().any(|&q| h % q == 0) { return false; }
     let r = (h as f64).sqrt() as u64;
     !(r * r == h || (r + 1) * (r + 1) == h)
+}
+
+/// **The wheel pass**: for each of `anchor, anchor+1, ..., anchor+count-1`, the first of
+/// `[2, seeds...]` that divides it, or `None` when it survives the wheel. Pass `&SEEDS` for the
+/// full wheel, or a shorter slice to see what a smaller one removes.
+pub fn wheel_pass(anchor: u64, count: u64, seeds: &[u64]) -> Vec<Option<u64>> {
+    (0..count).map(|d| {
+        let n = anchor + d;
+        std::iter::once(2u64).chain(seeds.iter().copied()).find(|&q| n % q == 0)
+    }).collect()
+}
+
+/// `wheel_pass` printed one line per offset, as the Python `wheel_report`; returns the survivors.
+pub fn wheel_report(anchor: u64, count: u64, seeds: &[u64]) -> usize {
+    let mut n = 0;
+    for (d, q) in wheel_pass(anchor, count, seeds).into_iter().enumerate() {
+        match q {
+            None => { n += 1; println!("{d:2}: survives"); }
+            Some(q) => println!("{d:2}: removed — divisible by {q}"),
+        }
+    }
+    n
+}
+
+// ── hints: the next prime from its low bits, no test ────────────────────────
+
+/// **The next prime above `anchor` from its low `bits` bits alone**: the first number above
+/// `anchor` congruent to `hint` mod `2^bits`. One modulo and one add, no primality test, and
+/// right whenever the gap is under `2^bits`: proven for 11 bits below `2^64` (largest gap 1,550).
+pub fn hinted_next(anchor: u64, hint: u64, bits: u32) -> u64 {
+    let m = 1u64 << bits;
+    let c = anchor + 1;
+    c + (hint.wrapping_sub(c) & (m - 1))
+}
+
+/// The low `bits` bits of `p`: what `hinted_next` needs.
+pub fn hint_of(p: u64, bits: u32) -> u64 { p & ((1u64 << bits) - 1) }
+
+/// **The hint walk**: the numbers after `start`, from nothing but their low `bits` bits. No
+/// index, no count, no test, no search. Any increasing sequence walks this way as long as every
+/// step is under `2^bits`; the primes do below `2^64` at 11 bits and beyond at 17.
+pub fn hint_walk(start: u64, hints: &[u64], bits: u32) -> Vec<u64> {
+    let mut p = start;
+    hints.iter().map(|&h| { p = hinted_next(p, h, bits); p }).collect()
 }
 
 fn mulmod(a: u64, b: u64, m: u64) -> u64 { ((a as u128 * b as u128) % m as u128) as u64 }
@@ -582,6 +637,49 @@ pub fn indexed_after(anchor: u64, n: usize, count: u64, family: Family) -> Vec<(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_512_slide_is_the_session_array_and_opens_back() {
+        let primes = crate::PiTable::new(30_000).primes_upto(30_000);
+        let primes = &primes[..2262];
+        for i in 0..2047u64 { assert_eq!(crate::r896(i), 384 + 512 * crate::ladder(i)); }
+        let b: Vec<u64> = primes.iter().enumerate().map(|(i, &p)| crate::slide512(p, i as u64)).collect();
+        assert_eq!(&b[..3], &[1408, 896, 2944]);
+        for (i, &x) in b.iter().enumerate() {
+            assert_eq!(x % 512, 384);
+            assert_eq!(crate::unslide512(x, i as u64), primes[i]);
+        }
+        let rep: Vec<usize> = (0..b.len() - 1).filter(|&i| b[i] == b[i + 1]).collect();
+        assert_eq!(rep.len(), 165);
+        assert_eq!(&rep[..4], &[9, 12, 25, 27]);
+        assert!(rep.iter().all(|&i| crate::slide_repeats(primes[i], primes[i + 1], i as u64)));
+        assert_eq!(rep.iter().filter(|&&i| primes[i + 1] - primes[i] == 2).count(), 112);
+        assert_eq!((1..17u64).map(crate::carry).collect::<Vec<_>>(), vec![2, 6, 6, 2, 2, 14, 14, 2, 2, 6, 6, 2, 2, 30, 30, 2]);
+    }
+    #[test]
+    fn the_hint_walk_rebuilds_the_primes_from_their_low_bits() {
+        let primes = crate::PiTable::new(2_000_000).primes_upto(2_000_000);
+        let hints: Vec<u64> = primes[1..].iter().map(|&p| crate::hint_of(p, 17)).collect();
+        assert_eq!(crate::hint_walk(2, &hints, 17), primes[1..]);
+        // eleven bits suffice below 2^64; the largest gap under two million is 132
+        let hints11: Vec<u64> = primes[1..].iter().map(|&p| crate::hint_of(p, 11)).collect();
+        assert_eq!(crate::hint_walk(2, &hints11, 11), primes[1..]);
+        assert_eq!(crate::hinted_next(100, crate::hint_of(101, 11), 11), 101);
+        // one step past the modulus and the hint wraps: the one condition
+        assert_eq!(crate::hint_walk(0, &[0], 17), vec![1 << 17]);
+    }
+    #[test]
+    fn the_wheel_pass_names_a_real_divisor_or_none() {
+        let w = crate::wheel_pass(8191, 100, &crate::SEEDS);
+        assert_eq!(w.len(), 100);
+        assert_eq!(w[0], None, "8191 is prime");
+        assert_eq!(w[1], Some(2));
+        for (d, q) in w.iter().enumerate() {
+            let n = 8191 + d as u64;
+            match q { Some(q) => assert_eq!(n % q, 0), None => assert!(std::iter::once(2).chain(crate::SEEDS).all(|q| n % q != 0)) }
+        }
+        let small = crate::wheel_pass(8191, 100, &[3, 5, 7]);
+        assert!(small.iter().filter(|q| q.is_none()).count() > w.iter().filter(|q| q.is_none()).count());
+    }
     use super::*;
 
     #[test]

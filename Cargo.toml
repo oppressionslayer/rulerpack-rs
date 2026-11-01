@@ -1,6 +1,6 @@
 [package]
 name = "rulerpack"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Lars Rocha's XOR rulers over the primes: pack, count, walk."
 

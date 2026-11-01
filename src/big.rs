@@ -4,7 +4,7 @@
 
 use num_bigint::BigUint;
 use num_integer::Integer;
-use num_traits::{One, ToPrimitive};
+use num_traits::{One, ToPrimitive, Zero};
 use rayon::prelude::*;
 
 use crate::PiTable;
@@ -128,8 +128,29 @@ pub fn any_prime_after_big(anchor: &BigUint, certify: Certify) -> BigUint {
     }
 }
 
+/// **The wheel pass on a big anchor**: for each of `anchor + d`, `d < count`, the first of
+/// `[2, seeds...]` that divides it, or `None` when it survives. `2^8191 - 1` with `&SEEDS` is the
+/// Python example.
+pub fn wheel_pass_big(anchor: &BigUint, count: u64, seeds: &[u64]) -> Vec<Option<u64>> {
+    (0..count).map(|d| {
+        let n = anchor + BigUint::from(d);
+        std::iter::once(2u64).chain(seeds.iter().copied()).find(|&q| (&n % q).is_zero())
+    }).collect()
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_big_wheel_pass_matches_the_small_one() {
+        use num_bigint::BigUint;
+        let big = super::wheel_pass_big(&BigUint::from(8191u64), 100, &crate::SEEDS);
+        assert_eq!(big, crate::wheel_pass(8191, 100, &crate::SEEDS));
+        let m = (BigUint::from(1u8) << 8191u32) - BigUint::from(1u8);
+        let w = super::wheel_pass_big(&m, 100, &crate::SEEDS);
+        assert_eq!(w[0], None, "the Mersenne prime survives");
+        assert_eq!(w[1], Some(2));
+        assert_eq!(w.iter().filter(|q| q.is_none()).count(), 12);
+    }
     use super::*;
     #[test]
     fn bands_and_width() {
