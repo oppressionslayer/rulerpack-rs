@@ -3,6 +3,14 @@ name = "rulerpack"
 version = "0.2.1"
 edition = "2021"
 description = "Lars Rocha's XOR rulers over the primes: pack, count, walk."
+license = "MIT"
+repository = "https://github.com/oppressionslayer/rulerpack-rs"
+readme = "README.md"
+keywords = ["primes", "xor", "sieve", "number-theory"]
+categories = ["mathematics", "algorithms"]
+# marks.bin is a built table, 12.5 MB, rebuilt in three seconds by `marks build`; crates.io caps a
+# crate at 10 MB, so it stays in the repo and out of the package
+exclude = ["marks.bin", ".github/"]
 
 [dependencies]
 num-bigint = { version = "0.4", optional = true }
