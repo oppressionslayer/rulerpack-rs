@@ -1,7 +1,7 @@
 # Rulerpack
 
 Prime-number windows, XOR rulers, reversible packing and factorization tools
-by Lars Rocha. This directory contains the Rulerpack 0.3.0 source library,
+by Lars Rocha. This directory contains the Rulerpack 0.3.1 source library,
 command-line tools, examples and tests.
 
 ## Library
@@ -18,7 +18,7 @@ integer windows. Enable `big` for arbitrary-size integer windows and factoring:
 
 ```toml
 [dependencies]
-rulerpack = { version = "0.3.0", features = ["big"] }
+rulerpack = { version = "0.3.1", features = ["big"] }
 ```
 
 ## Run an example
