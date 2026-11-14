@@ -1,0 +1,67 @@
+[package]
+name = "rulerpack"
+version = "0.3.0"
+edition = "2021"
+description = "Lars Rocha's XOR rulers over the primes: pack, count, walk."
+license = "MIT"
+repository = "https://github.com/oppressionslayer/rulerpack-rs"
+readme = "README.md"
+keywords = ["primes", "xor", "sieve", "number-theory"]
+categories = ["mathematics", "algorithms"]
+include = ["/src/**", "/examples/**", "/Cargo.toml", "/README.md", "/LICENSE"]
+
+[dependencies]
+num-bigint = { version = "0.4", optional = true }
+num-traits = { version = "0.2", optional = true }
+num-integer = { version = "0.1", optional = true }
+rayon = { version = "1.10", optional = true }
+rug = { version = "1.26", optional = true, default-features = false, features = ["integer"] }
+gmp-mpfr-sys = { version = "1.6", optional = true, default-features = false, features = ["use-system-libs"] }
+
+[features]
+big = ["num-bigint", "num-traits", "num-integer", "rayon"]
+gmp = ["rug", "gmp-mpfr-sys", "rayon"]
+
+[[bin]]
+name = "nextbig"
+required-features = ["big"]
+
+[[bin]]
+name = "anyprime"
+required-features = ["big"]
+
+[[bin]]
+name = "anyprime_gmp"
+required-features = ["gmp"]
+
+[[bin]]
+name = "gmp_bench"
+required-features = ["gmp"]
+
+[[example]]
+name = "qs_time"
+required-features = ["big"]
+
+[[example]]
+name = "snfs_time"
+required-features = ["big"]
+
+[[example]]
+name = "snfs_degree"
+required-features = ["big"]
+
+[[example]]
+name = "snfs_coupled"
+required-features = ["big"]
+
+[[example]]
+name = "siqs_time"
+required-features = ["big"]
+
+[[example]]
+name = "siqs_sweep"
+required-features = ["big"]
+
+[[example]]
+name = "factor"
+required-features = ["big"]
